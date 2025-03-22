@@ -2,7 +2,7 @@ from django.db import models
 from custom_user.models import User
 
 
-class Ingridient(models.Model):
+class Ingredient(models.Model):
     name = models.CharField(
         verbose_name='Название',
         max_length=300
@@ -39,7 +39,7 @@ class Recipe(models.Model):
         verbose_name='Текстовое описание'
     )
     ingridients = models.ManyToManyField(
-        Ingridient,
+        Ingredient,
         verbose_name='Ингридиенты'
     )
     time_to_cook = models.PositiveIntegerField(
