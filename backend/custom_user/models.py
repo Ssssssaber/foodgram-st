@@ -23,7 +23,15 @@ class User(AbstractUser):
         verbose_name='Фамилия',
         max_length=150
     )
-    # avatar
+    avatar = models.ImageField(
+        verbose_name="Аватар",
+        upload_to="media/user_avatars/",
+        blank=True,
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания",
+    )
 
     def __str__(self):
         return self.username
@@ -31,3 +39,37 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+        ordering = ("-created_at",)
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+        verbose_name="Подписчик",
+    )
+    target = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="subscribers",
+        verbose_name="Пользователь",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания",
+    )
+
+    def __str__(self):
+        return f"{self.user} -> {self.target}"
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "target"),
+                name="u_subscriptions"
+            )
+        ]
+        ordering = ("-created_at",)
