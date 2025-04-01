@@ -33,7 +33,7 @@ class Recipe(models.Model):
     picture = models.ImageField(
         verbose_name='Картинка',
         upload_to='images',
-        default='images/base.jpg'
+        default='media/base.png'
     )
     description = models.TextField(
         verbose_name='Текстовое описание'
@@ -46,6 +46,11 @@ class Recipe(models.Model):
     time_to_cook = models.PositiveIntegerField(
         verbose_name='Время приготовления в минутах'
     )
+    # keke = models.CharField()
+    # created_at = models.DateTimeField(
+    #     # auto_now_add=True,
+    #     verbose_name="Дата создания"
+    # )
 
     def __str__(self):
         return self.name
