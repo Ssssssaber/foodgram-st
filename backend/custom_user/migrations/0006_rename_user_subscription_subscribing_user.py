@@ -9,7 +9,6 @@ class Migration(migrations.Migration):
         ('custom_user', '0005_remove_subscription_u_subscriptions_and_more'),
     ]
 
-    
     operations = [
         migrations.RemoveConstraint(
             model_name='subscription',
@@ -17,6 +16,9 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='subscription',
-            constraint=models.UniqueConstraint(fields=('subscribing_user', 'target'), name='u_subscriptions'),
+            constraint=models.UniqueConstraint(
+                fields=('subscribing_user', 'target'),
+                name='u_subscriptions'
+            ),
         ),
     ]
