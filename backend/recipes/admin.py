@@ -4,7 +4,7 @@ from .models import Ingredient, Recipe, IngredientAndRecipe
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ("pk", "name", "measure")
+    list_display = ("pk", "name", "measurement_unit")
     search_fields = ("name",)
 
 

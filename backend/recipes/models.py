@@ -7,7 +7,7 @@ class Ingredient(models.Model):
         verbose_name='Название',
         max_length=300
     )
-    measure = models.CharField(
+    measurement_unit = models.CharField(
         verbose_name='Единица измерения',
         max_length=50
     )
@@ -20,7 +20,7 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингридиенты'
         constraints = [
             models.UniqueConstraint(
-                fields=["name", "measure"], name="u_ingredient"
+                fields=["name", "measurement_unit"], name="u_ingredient"
             )
         ]
         ordering = ("name",)
@@ -29,6 +29,7 @@ class Ingredient(models.Model):
 class Recipe(models.Model):
     author = models.ForeignKey(
         User,
+        related_name='recipes',
         verbose_name='Автор публикации',
         on_delete=models.CASCADE
     )
@@ -36,12 +37,11 @@ class Recipe(models.Model):
         verbose_name='Название',
         max_length=256
     )
-    picture = models.ImageField(
+    image = models.ImageField(
         verbose_name='Картинка',
-        upload_to='images',
-        default='media/base.png'
+        upload_to='recipes'
     )
-    description = models.TextField(
+    text = models.TextField(
         verbose_name='Текстовое описание'
     )
     ingridients = models.ManyToManyField(
@@ -49,7 +49,7 @@ class Recipe(models.Model):
         through='IngredientAndRecipe',
         verbose_name='Ингридиенты'
     )
-    time_to_cook = models.PositiveIntegerField(
+    cooking_time = models.PositiveIntegerField(
         verbose_name='Время приготовления в минутах'
     )
     # keke = models.CharField()
@@ -77,7 +77,6 @@ class IngredientAndRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='recipes',
         verbose_name=''
     )
     amount = models.PositiveIntegerField(

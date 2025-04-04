@@ -15,7 +15,7 @@ services:
       - POSTGRES_PASSWORD=kekeispassword
       - POSTGRES_DB=foodgram
     ports:
-      - 5433:5432
+      - 5433:5433
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -48,4 +48,4 @@ services:
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
       - static:/etc/nginx/html/api/static
-      - media:/etc/html/media
+      - media:/etc/nginx/html/media

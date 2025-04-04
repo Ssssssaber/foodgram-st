@@ -18,9 +18,9 @@ class UserAdmin(UserAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ("pk", "user", "target")
+    list_display = ("pk", "subscribing_user", "target")
     search_fields = (
-        "suser__username",
+        "user__username",
         "user__email",
         "target__username",
         "target__email"
