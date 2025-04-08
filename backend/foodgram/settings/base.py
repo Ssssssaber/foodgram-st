@@ -138,15 +138,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTHENTICATION_BACKENDS = [
-    'custom_user.authentication.EmailAuth'
-]
-
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
         'user': 'api.serializers.AuthorSerializer',
-        'user_create': 'api.serializers.CreateUser',
         'current_user': 'api.serializers.AuthorSerializer',
     },
     'PERMISSIONS': {

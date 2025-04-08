@@ -16,25 +16,45 @@ from rest_framework import (
 
 from api.permissions import IsMethodSafePermission
 from api.serializers import (
-    CartSerializer,
     CreateAvatarSerializer,
     CreateRecipeSerializer,
-    FavoriteSerializer,
     IngredientSerializer,
     RecipeSerializer,
+    ShortRecipeSerializer,
     SubscriberSerializer,
-    SubscriptionSerializer
 )
 from recipes.models import (
     Ingredient,
     Recipe,
-    UserCart,
+    Cart,
     FavoriteUserRecipes
 )
 from custom_user.models import Subscription
 
-get_user_model_cache = []
-get_recipe_cache = []
+get_user_model_cache = {}
+get_recipe_cache = {}
+
+
+def get_user_by_id(pk):
+    if pk not in get_user_model_cache:
+        user = get_object_or_404(
+            get_user_model(),
+            pk=pk
+        )
+        get_user_model_cache[pk] = user
+        return user
+    return get_user_model_cache[pk]
+
+
+def get_recipe_by_id(pk):
+    if pk not in get_recipe_cache:
+        recipe = get_object_or_404(
+            Recipe,
+            pk=pk
+        )
+        get_recipe_cache[pk] = recipe
+        return recipe
+    return get_recipe_cache[pk]
 
 
 class IngredientViewset(viewsets.ReadOnlyModelViewSet):
@@ -55,12 +75,16 @@ class IngredientViewset(viewsets.ReadOnlyModelViewSet):
 
 class UserViewSet(views.UserViewSet):
     queryset = get_user_model().objects.all()
-    permission_classes = (IsMethodSafePermission,)
+    permission_classes = (IsMethodSafePermission, )
 
-    def has_permission(self, request, view):
-        if view.action == "me":
-            return request.user.is_authenticated
-        return super().has_permission(request, view)
+    @decorators.action(
+        detail=False,
+        methods=('get',),
+        url_path='me',
+        permission_classes=(permissions.IsAuthenticated,)
+    )
+    def me(self, request):
+        return super().me(request)
 
     @decorators.action(
         detail=True,
@@ -103,7 +127,7 @@ class UserViewSet(views.UserViewSet):
             SubscriberSerializer(
                 self.paginate_queryset(
                     self.get_queryset().filter(
-                        pk__in=request.user.subscriptions.values("target")
+                        pk__in=request.user.subscribers.values("target")
                     )
                 ),
                 many=True,
@@ -119,12 +143,7 @@ class UserViewSet(views.UserViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def subscribe(self, request, id):
-        if id not in get_user_model_cache:
-            get_object_or_404(
-                get_user_model(),
-                pk=id
-            )
-            get_user_model_cache.append(id)
+        target = get_user_by_id(id)
 
         if request.method == "POST":
             if request.user.pk == int(id):
@@ -132,15 +151,11 @@ class UserViewSet(views.UserViewSet):
                     {"Fail": "Попытка подписаться на самого себя"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            serializer = SubscriptionSerializer(
-                data={
-                    "subscribing_user": request.user.pk,
-                    "target": id,
-                },
-                context={"request": request},
+
+            Subscription.objects.create(
+                subscribing_user=request.user,
+                target=target
             )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
 
             return response.Response(
                 SubscriberSerializer(
@@ -150,35 +165,23 @@ class UserViewSet(views.UserViewSet):
                 status=status.HTTP_201_CREATED
             )
 
-        get_object_or_404(Subscription, subscribing_user=request.user).delete()
+        get_object_or_404(
+            Subscription,
+            subscribing_user=request.user,
+            target=target
+        ).delete()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = (IsMethodSafePermission,)
+    permission_classes = (IsMethodSafePermission, )
     filter_backends = (rest_framework.DjangoFilterBackend,)
 
     def get_serializer_class(self):
         if self.action in ("create", "partial_update"):
             return CreateRecipeSerializer
         return RecipeSerializer
-
-    def create_recipe_collection(self, request, pk, serializer_class):
-        serializer = serializer_class(
-            data={
-                "user": request.user.id,
-                "recipe": pk,
-            }
-        )
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return response.Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
-        )
 
     @decorators.action(
         detail=True,
@@ -188,16 +191,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def favorite(self, request, pk):
-        if pk not in get_recipe_cache:
-            get_object_or_404(
-                Recipe,
-                pk=pk
-            )
-            get_recipe_cache.append(pk)
+        recipe = get_recipe_by_id(pk)
 
         if request.method == "POST":
-            return self.create_recipe_collection(
-                request, pk, FavoriteSerializer
+            FavoriteUserRecipes.objects.create(
+                user=request.user,
+                recipe=recipe,
+            )
+
+            return response.Response(
+                ShortRecipeSerializer(recipe).data,
+                status=status.HTTP_201_CREATED
             )
 
         get_object_or_404(
@@ -215,19 +219,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def shopping_cart(self, request, pk):
-        if pk not in get_recipe_cache:
-            get_object_or_404(
-                Recipe,
-                pk=pk
-            )
-            get_recipe_cache.append(pk)
+        recipe = get_recipe_by_id(pk)
 
         if request.method == "POST":
-            return self.create_recipe_collection(
-                request, pk, CartSerializer
+            Cart.objects.create(
+                user=request.user,
+                recipe=recipe,
             )
+
+            return response.Response(
+                ShortRecipeSerializer(recipe).data,
+                status=status.HTTP_201_CREATED
+            )
+
         get_object_or_404(
-            UserCart,
+            Cart,
             user=request.user,
             recipe_id=pk
         ).delete()
@@ -241,7 +247,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        ingredients = UserCart.objects.filter(
+        ingredients = Cart.objects.filter(
             user=request.user
         ).values(
             "recipe__recipe_ingredients__ingredient__name",
@@ -253,7 +259,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
         recipes = (
-            UserCart.objects
+            Cart.objects
             .filter(user=request.user)
         )
 

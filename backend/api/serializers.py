@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
@@ -9,9 +9,7 @@ from custom_user.models import Subscription
 from recipes.models import (
     Ingredient,
     IngredientAndRecipe,
-    Recipe,
-    UserCart,
-    FavoriteUserRecipes
+    Recipe
 )
 
 
@@ -153,60 +151,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = (
             "subscribing_user", "target"
         )
-
-
-class CreateUser(UserCreateSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = User
-        fields = (
-            "email",
-            "id",
-            "username",
-            "first_name",
-            "last_name",
-            "password",
-        )
-
-
-class RecipeCollectionSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        abstract = True
-        fields = ("user", "recipe")
-
-    def to_representation(self, instance):
-        serializer = ShortRecipeSerializer(
-            instance.recipe,
-            context=self.context
-        )
-        return serializer.data
-
-    def validate(self, attrs):
-        queryset = self.Meta.model.objects
-        user = attrs["user"]
-        recipe = attrs["recipe"]
-
-        if queryset.filter(
-            recipe=recipe,
-            user=user
-        ).exists():
-            raise serializers.ValidationError(
-                "Запись уже существует"
-            )
-
-        return super().validate(attrs)
-
-
-class FavoriteSerializer(RecipeCollectionSerializer):
-    class Meta(RecipeCollectionSerializer.Meta):
-        model = FavoriteUserRecipes
-
-
-class CartSerializer(RecipeCollectionSerializer):
-    class Meta(RecipeCollectionSerializer.Meta):
-        model = UserCart
 
 
 class CreateIngredientSerializer(serializers.Serializer):

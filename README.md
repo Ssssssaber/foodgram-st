@@ -13,7 +13,18 @@
 
 # Запуск
 
-* В директории backend/foodgram/ создать .env файл с данными для подключения к базе данных. Пример файла, данные которого совпадают с данными в docker-compose.yml:
+## Docker
+
+* Склонировать репозиторий
+```bash
+git clone https://github.com/Ssssssaber/foodgram-st
+```
+* В директории backend/foodgram/ создать .env файл с данными для подключения к базе данных. 
+```bash
+cd foodgram-st/backend/
+touch .env
+```
+Пример файла, данные которого совпадают с данными в docker-compose.yml:
 ```env
 export DB_NAME = foodgram
 export DB_USER = foodgram_admin
@@ -22,6 +33,88 @@ export DB_HOST = postgres
 export DB_DB_PORT = 5432
 ```
 * Перейти в директорию в infra/ и запустить команду
-```
+```bash
+cd ../infra/
 docker compose up
 ```
+* Фикстуры при запуске docker compose загружаются автоматически
+```Dockerfile
+# foodgram-st/backend/Dockerfile
+FROM python:3.12.3
+COPY . .
+
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+EXPOSE 8000
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+CMD ["bash", "-c", "python manage.py collectstatic --settings=foodgram.settings.deploy --noinput && \
+python manage.py makemigrations --settings=foodgram.settings.deploy && \
+python manage.py migrate --settings=foodgram.settings.deploy && \
+python manage.py loaddata example_data/recipes.json --settings=foodgram.settings.deploy && \ 
+gunicorn foodgram.wsgi:application --bind 0:8000 -c foodgram/settings/deploy.py"]
+```
+## Локальное развертывание без Docker
+
+* Склонировать репозиторий
+```
+git clone https://github.com/Ssssssaber/foodgram-st
+```
+
+* Создать виртуальную среду и активировать ее
+
+```bash
+# Windows
+python -m venv venv
+./venv/Scripts/activate
+```
+
+```bash
+# Linux
+python3 -m venv venv
+source ./venv/bin/activate
+```
+
+* Установить зависимости из файла requirements.txt
+
+```bash
+pip install -r requirements.txt
+```
+
+* Выполнить миграции
+
+```bash
+# foodgram-st/backend
+python manage.py migrate --settings=foodgram.settings.dev
+```
+
+* Создать суперпользователя 
+
+```bash
+python manage.py createsuperuser --settings=foodgram.settings.dev
+```
+* Заполнить базу данных
+
+```bash
+python manage.py loaddata example_data/recipes.json --settings=foodgram.settings.dev
+```
+
+* Запустить сервер
+
+```bash
+python manage.py runserver --settings=foodgram.settings.dev
+```
+
+# API
+
+* http://127.0.0.1:8000/admin/ - админ панель; 
+* http://127.0.0.1:8000/api/ - корень API;
+* http://127.0.0.1/api/docs/ - документация к API;
+* http://127.0.0.1 - главная страница
+
+# Автор проекта
+
+Лобанов Владимир Викторович

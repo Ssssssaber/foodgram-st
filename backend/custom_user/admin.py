@@ -39,7 +39,7 @@ class UserAdmin(UserAdmin):
 
     @admin.display(description='Подписчики')
     def get_subscribers(self, user):
-        return user.authors.count()
+        return user.authors_subscriptions.count()
 
 
 @admin.register(Subscription)

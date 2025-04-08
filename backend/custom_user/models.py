@@ -5,7 +5,7 @@ from django.db import models
 
 class User(AbstractUser):
     username = models.CharField(
-        verbose_name='Имя пользователя',
+        verbose_name='Псевдоним',
         max_length=150,
         validators=[RegexValidator(regex=r'^[\w.@+\- ]+$')],
         unique=True
@@ -33,6 +33,9 @@ class User(AbstractUser):
         verbose_name="Дата создания",
     )
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
     def __str__(self):
         return self.username
 
@@ -52,12 +55,8 @@ class Subscription(models.Model):
     target = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="authors",
+        related_name="authors_subscriptions",
         verbose_name="Пользователь",
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата создания",
     )
 
     def __str__(self):
@@ -72,4 +71,3 @@ class Subscription(models.Model):
                 name="u_subscriptions"
             )
         ]
-        ordering = ("-created_at",)

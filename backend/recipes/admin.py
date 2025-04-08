@@ -4,7 +4,7 @@ from .models import (
     Recipe,
     IngredientAndRecipe,
     FavoriteUserRecipes,
-    UserCart
+    Cart
 )
 from django.utils.safestring import mark_safe
 
@@ -58,6 +58,6 @@ class IngredientAndRecipeAdmin(admin.ModelAdmin):
     list_display = ("pk", "recipe", "ingredient", "amount")
 
 
-@admin.register(FavoriteUserRecipes, UserCart)
+@admin.register(FavoriteUserRecipes, Cart)
 class FavoriteRecipeShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
