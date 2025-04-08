@@ -3,9 +3,10 @@ import json
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import FileResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, reverse
 from django_filters import rest_framework
 from djoser import views
+from datetime import datetime
 from rest_framework import (
     decorators,
     filters,
@@ -26,7 +27,13 @@ from api.serializers import (
     SubscriberSerializer,
     SubscriptionSerializer
 )
-from recipes.models import Ingredient, Recipe, UserCart, FavoriteUserRecipes
+from recipes.models import (
+    Ingredient,
+    IngredientAndRecipe,
+    Recipe,
+    UserCart,
+    FavoriteUserRecipes
+)
 from custom_user.models import Subscription
 
 get_user_model_cache = []
@@ -43,7 +50,7 @@ class IngredientViewset(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        name = self.request.query_params.get('name', None)
+        name = self.request.query_params.get("name", None)
         if name:
             queryset = queryset.filter(name__istartswith=name)
         return queryset
@@ -242,28 +249,42 @@ class RecipeViewSet(viewsets.ModelViewSet):
             "recipe__recipe_ingredients__ingredient__name",
             "recipe__recipe_ingredients__ingredient__measurement_unit"
         ).annotate(
-            total=Sum('recipe__recipe_ingredients__amount')
+            total=Sum("recipe__recipe_ingredients__amount")
+        ).order_by(
+            "recipe__recipe_ingredients__ingredient__name"
         )
 
-        shopping_list = []
-        for ingredient in ingredients:
-            shoppint_item = {}
-            shoppint_item['name'] = ingredient[
-                "recipe__recipe_ingredients__ingredient__name"
-            ]
-            shoppint_item['measurement_unit'] = ingredient[
-                "recipe__recipe_ingredients__ingredient__measurement_unit"
-            ]
-            shoppint_item['total'] = ingredient["total"]
-            shopping_list.append(shoppint_item)
+        recipes = (
+            UserCart.objects
+            .filter(user=request.user)
+        )
 
-        response_file = json.dumps(shopping_list)
+        file = "\n".join([
+            "Список покупок {username} ({date}):".format(
+                username=request.user.username,
+                date=datetime.now()
+            ),
+            "Продукты:",
+            *(
+                "{i}. {name} {amount} {measurement_unit}".format(
+                    i=i,
+                    name=ingredient["recipe__recipe_ingredients__ingredient__name"].capitalize(),
+                    amount=ingredient["total"],
+                    measurement_unit=ingredient["recipe__recipe_ingredients__ingredient__measurement_unit"]
+                ) for i, ingredient in enumerate(ingredients, start=1)
+            ),
+            "Рецепты:",
+            *(
+                "{i}. {name}".format(i=i, name=recipe)
+                for i, recipe in enumerate(recipes, start=1)
+            ),
+        ])
 
         return FileResponse(
-            response_file,
+            file,
             as_attachment=True,
-            filename="shop-list.json",
-            content_type="application/json"
+            filename="shopping-list.txt",
+            content_type="text/plain",
         )
 
     @decorators.action(
@@ -273,10 +294,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_name="get-link",
     )
     def return_short_link(self, request, pk):
-        instance = self.get_object()
-        url = f"{request.get_host()}/s/{instance.pk}"
-
-        return response.Response(
-         
-            data={"short-link": url}
-        )
+        get_object_or_404(Recipe, pk=pk)
+        return response.Response({
+            "short-link": request.build_absolute_uri(
+                reverse("recipes:get_recipe_link", args=(pk,))
+            )
+        })
