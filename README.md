@@ -57,6 +57,11 @@ python manage.py migrate --settings=foodgram.settings.deploy && \
 python manage.py loaddata example_data/recipes.json --settings=foodgram.settings.deploy && \ 
 gunicorn foodgram.wsgi:application --bind 0:8000 -c foodgram/settings/deploy.py"]
 ```
+
+* Для тестирования админ-панели также нужно создать суперпользователя
+```
+docker exec backend python manage.py createsuperuser --settings=foodgram.settings.deploy
+```
 ## Локальное развертывание без Docker
 
 * Склонировать репозиторий
