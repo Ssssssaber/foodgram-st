@@ -1,5 +1,3 @@
-
-import json
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import FileResponse
@@ -29,7 +27,6 @@ from api.serializers import (
 )
 from recipes.models import (
     Ingredient,
-    IngredientAndRecipe,
     Recipe,
     UserCart,
     FavoriteUserRecipes
@@ -269,9 +266,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
             *(
                 "{i}. {name} {amount} {measurement_unit}".format(
                     i=i,
-                    name=ingredient["recipe__recipe_ingredients__ingredient__name"].capitalize(),
+                    name=ingredient[
+                        "recipe__recipe"
+                        "_ingredients__ingredient__name"
+                    ].capitalize(),
                     amount=ingredient["total"],
-                    measurement_unit=ingredient["recipe__recipe_ingredients__ingredient__measurement_unit"]
+                    measurement_unit=ingredient[
+                        "recipe__recipe_ingredients"
+                        "__ingredient__measurement_unit"
+                    ]
                 ) for i, ingredient in enumerate(ingredients, start=1)
             ),
             "Рецепты:",
