@@ -167,5 +167,5 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend'
     ],
     'SEARCH_PARAM': 'name',
-    'DEFAULT_PAGINATION_CLASS': 'api.pagination.BasePagination',
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.RecipesPagination',
 }

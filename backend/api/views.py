@@ -15,7 +15,7 @@ from rest_framework import (
     viewsets
 )
 
-from api.permissions import ApiPermission
+from api.permissions import IsMethodSafePermission
 from api.serializers import (
     CartSerializer,
     CreateAvatarSerializer,
@@ -47,7 +47,13 @@ class IngredientViewset(viewsets.ReadOnlyModelViewSet):
 
 class UserViewSet(views.UserViewSet):
     queryset = get_user_model().objects.all()
-    permission_classes = (ApiPermission,)
+    permission_classes = (IsMethodSafePermission,)
+
+    def has_permission(self, request, view):
+        if view.action == "me":
+            return request.user.is_authenticated
+        else:
+            return super().has_permission(request, view)
 
     @decorators.action(
         detail=True,
@@ -143,7 +149,7 @@ class UserViewSet(views.UserViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = (ApiPermission,)
+    permission_classes = (IsMethodSafePermission,)
     filter_backends = (rest_framework.DjangoFilterBackend,)
 
     def get_serializer_class(self):
