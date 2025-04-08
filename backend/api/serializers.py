@@ -23,7 +23,7 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ("id", "name", "measurement_unit")
-        read_only_fields = ("id", "name", "measurement_unit")
+        read_only_fields = fields
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
@@ -32,7 +32,6 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.CharField(
         source='ingredient.measurement_unit'
     )
-    # amount = serializers.IntegerField()
 
     class Meta:
         model = IngredientAndRecipe
@@ -83,12 +82,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
             "image",
             "cooking_time",
         )
-        read_only_fields = (
-            "id",
-            "name",
-            "image",
-            "cooking_time",
-        )
+        read_only_fields = fields
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -113,17 +107,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
-        read_only_fields = (
-            "id",
-            "author",
-            "ingredients",
-            "is_favorited",
-            "is_in_shopping_cart",
-            "name",
-            "image",
-            "text",
-            "cooking_time",
-        )
+        read_only_fields = fields
 
     def get_is_favorited(self, recipe):
         request = self.context.get("request")
@@ -226,25 +210,19 @@ class CartSerializer(RecipeCollectionSerializer):
 
 
 class CreateIngredientSerializer(serializers.Serializer):
-    id = serializers.PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all(),
-        source='pk'
-    )
+    id = serializers.IntegerField()
     amount = serializers.IntegerField(
         min_value=1
     )
 
     class Meta:
+        model = Ingredient
         fields = ("id", "amount")
 
 
 class CreateRecipeSerializer(serializers.ModelSerializer):
     ingredients = CreateIngredientSerializer(many=True)
     image = Base64ImageField()
-    cooking_time = serializers.IntegerField(
-        source="recipes.cooking_time",
-        min_value=1
-    )
 
     class Meta:
         model = Recipe
@@ -287,11 +265,10 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients = validated_data.pop("ingredients")
         user = self.context.get("request").user
-        # Вызов метода базового сериализатора для создания объекта Recipe
-        recipe = super().create(validated_data)
-        recipe.author = user
-        recipe.save()
 
+        validated_data['author'] = user
+        recipe = super().create(validated_data)
+        recipe.save()
         self.create_ingredients(ingredients, recipe)
 
         return recipe

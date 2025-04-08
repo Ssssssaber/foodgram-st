@@ -26,7 +26,11 @@ from api.serializers import (
     SubscriberSerializer,
     SubscriptionSerializer
 )
-from recipes.models import Ingredient, Recipe, UserCart
+from recipes.models import Ingredient, Recipe, UserCart, FavoriteUserRecipes
+from custom_user.models import Subscription
+
+get_user_model_cache = []
+get_recipe_cache = []
 
 
 class IngredientViewset(viewsets.ReadOnlyModelViewSet):
@@ -92,16 +96,17 @@ class UserViewSet(views.UserViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def subscriptions(self, request):
-        targets = request.user.subscriptions.values("target")
-        queryset = self.get_queryset().filter(
-            pk__in=targets
+        return self.get_paginated_response(
+            SubscriberSerializer(
+                self.paginate_queryset(
+                    self.get_queryset().filter(
+                        pk__in=request.user.subscriptions.values("target")
+                    )
+                ),
+                many=True,
+                context={"request": request}
+            ).data
         )
-        pages = self.paginate_queryset(queryset)
-        serializer = SubscriberSerializer(
-            pages, many=True, context={"request": request}
-        )
-
-        return self.get_paginated_response(serializer.data)
 
     @decorators.action(
         detail=True,
@@ -111,13 +116,19 @@ class UserViewSet(views.UserViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def subscribe(self, request, id):
-        get_object_or_404(
-            get_user_model(),
-            pk=id
-        )
+        if id not in get_user_model_cache:
+            get_object_or_404(
+                get_user_model(),
+                pk=id
+            )
+            get_user_model_cache.append(id)
+
         if request.method == "POST":
             if request.user.pk == int(id):
-                return response.Response(status=status.HTTP_400_BAD_REQUEST)
+                return response.Response(
+                    {"Fail": "Попытка подписаться на самого себя"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             serializer = SubscriptionSerializer(
                 data={
                     "subscribing_user": request.user.pk,
@@ -127,24 +138,16 @@ class UserViewSet(views.UserViewSet):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            response_serializer = SubscriberSerializer(
-                self.get_queryset().get(pk=id),
-                context={"request": request}
-            )
 
             return response.Response(
-                response_serializer.data,
+                SubscriberSerializer(
+                    self.get_queryset().get(pk=id),
+                    context={"request": request}
+                ).data,
                 status=status.HTTP_201_CREATED
             )
-        else:
-            queryset = SubscriptionSerializer.Meta.model.objects
-            subscription = queryset.filter(
-                subscribing_user=request.user, target_id=id
-            )
-            if subscription.exists():
-                subscription.delete()
-                return response.Response(status=status.HTTP_204_NO_CONTENT)
-            return response.Response(status=status.HTTP_400_BAD_REQUEST)
+
+        get_object_or_404(Subscription, subscribing_user=request.user).delete()
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -174,13 +177,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    def delete_recipe_collection(self, request, pk, queryset):
-        recipe = queryset.filter(user=request.user, recipe_id=pk)
-        if recipe.exists():
-            recipe.delete()
-            return response.Response(status=status.HTTP_204_NO_CONTENT)
-        return response.Response(status=status.HTTP_400_BAD_REQUEST)
-
     @decorators.action(
         detail=True,
         methods=("post", "delete"),
@@ -189,19 +185,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def favorite(self, request, pk):
-        get_object_or_404(
-            Recipe,
-            pk=pk
-        )
+        if pk not in get_recipe_cache:
+            get_object_or_404(
+                Recipe,
+                pk=pk
+            )
+            get_recipe_cache.append(pk)
 
         if request.method == "POST":
             return self.create_recipe_collection(
                 request, pk, FavoriteSerializer
             )
-        else:
-            return self.delete_recipe_collection(
-                request, pk, FavoriteSerializer.Meta.model.objects
-            )
+
+        get_object_or_404(
+            FavoriteUserRecipes,
+            user=request.user,
+            recipe_id=pk
+        ).delete()
 
     @decorators.action(
         detail=True,
@@ -211,19 +211,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def shopping_cart(self, request, pk):
-        get_object_or_404(
-            Recipe,
-            pk=pk
-        )
+        if pk not in get_recipe_cache:
+            get_object_or_404(
+                Recipe,
+                pk=pk
+            )
+            get_recipe_cache.append(pk)
 
         if request.method == "POST":
             return self.create_recipe_collection(
                 request, pk, CartSerializer
             )
-        else:
-            return self.delete_recipe_collection(
-                request, pk, CartSerializer.Meta.model.objects
-            )
+        get_object_or_404(
+            UserCart,
+            user=request.user,
+            recipe_id=pk
+        ).delete()
 
     @decorators.action(
         detail=False,
