@@ -46,13 +46,13 @@ class Subscription(models.Model):
     subscribing_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="subscriptions",
+        related_name="subscribers",
         verbose_name="Подписчик",
     )
     target = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="subscribers",
+        related_name="authors",
         verbose_name="Пользователь",
     )
     created_at = models.DateTimeField(

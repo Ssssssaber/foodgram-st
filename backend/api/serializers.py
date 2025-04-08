@@ -44,7 +44,7 @@ class IsSubscribedSerializer(serializers.Serializer):
     def get_is_subscribed(self, target_user):
         user = self.context.get("request").user
 
-        return user.is_authenticated and user.subscriptions.filter(
+        return user.is_authenticated and user.subscribers.filter(
             target=target_user.id
         ).exists()
 

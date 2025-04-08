@@ -63,8 +63,7 @@ class UserViewSet(views.UserViewSet):
     def has_permission(self, request, view):
         if view.action == "me":
             return request.user.is_authenticated
-        else:
-            return super().has_permission(request, view)
+        return super().has_permission(request, view)
 
     @decorators.action(
         detail=True,
@@ -155,6 +154,7 @@ class UserViewSet(views.UserViewSet):
             )
 
         get_object_or_404(Subscription, subscribing_user=request.user).delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -165,8 +165,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ("create", "partial_update"):
             return CreateRecipeSerializer
-        else:
-            return RecipeSerializer
+        return RecipeSerializer
 
     def create_recipe_collection(self, request, pk, serializer_class):
         serializer = serializer_class(
@@ -209,6 +208,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             user=request.user,
             recipe_id=pk
         ).delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
         detail=True,
@@ -234,6 +234,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             user=request.user,
             recipe_id=pk
         ).delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
         detail=False,
