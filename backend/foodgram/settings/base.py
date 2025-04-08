@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     'djoser',
     'django_filters',
-    'custom_user',
     'api',
     'recipes',
     'foodgram'
@@ -89,7 +88,7 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-AUTH_USER_MODEL = "custom_user.User"
+AUTH_USER_MODEL = "recipes.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

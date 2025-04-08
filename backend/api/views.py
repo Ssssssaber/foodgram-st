@@ -27,9 +27,9 @@ from recipes.models import (
     Ingredient,
     Recipe,
     Cart,
-    FavoriteUserRecipes
+    FavoriteUserRecipes,
+    Subscription
 )
-from custom_user.models import Subscription
 
 get_user_model_cache = {}
 get_recipe_cache = {}

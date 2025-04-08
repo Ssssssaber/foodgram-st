@@ -5,11 +5,11 @@ from rest_framework import serializers
 
 from .utils import is_number
 
-from custom_user.models import Subscription
 from recipes.models import (
     Ingredient,
     IngredientAndRecipe,
-    Recipe
+    Recipe,
+    Subscription
 )
 
 

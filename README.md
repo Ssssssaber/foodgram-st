@@ -7,7 +7,7 @@
 * Django Rest Framework - организация REST API
 * Gunicorn - запуск веб-приложения
 * Djoser - работа с учетными записями пользователей
-* Postgres - база данных
+* Postgres - база данных (sqlite при локальном развертывании)
 * Nginx - прокси-сервер
 * Docker - контейнеризация
 
@@ -62,6 +62,7 @@ gunicorn foodgram.wsgi:application --bind 0:8000 -c foodgram/settings/deploy.py"
 * Склонировать репозиторий
 ```
 git clone https://github.com/Ssssssaber/foodgram-st
+cd foodgram-st/backend/
 ```
 
 * Создать виртуальную среду и активировать ее
@@ -96,10 +97,10 @@ python manage.py migrate --settings=foodgram.settings.dev
 ```bash
 python manage.py createsuperuser --settings=foodgram.settings.dev
 ```
-* Заполнить базу данных
+* Заполнить базу данных ингридиентами
 
 ```bash
-python manage.py loaddata example_data/recipes.json --settings=foodgram.settings.dev
+python manage.py loaddata example_data/ingredients.json --settings=foodgram.settings.dev
 ```
 
 * Запустить сервер
