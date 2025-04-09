@@ -37,26 +37,7 @@ export DB_DB_PORT = 5432
 cd ../infra/
 docker compose up
 ```
-* Фикстуры при запуске docker compose загружаются автоматически
-```Dockerfile
-# foodgram-st/backend/Dockerfile
-FROM python:3.12.3
-COPY . .
-
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
-
-EXPOSE 8000
-
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-CMD ["bash", "-c", "python manage.py collectstatic --settings=foodgram.settings.deploy --noinput && \
-python manage.py makemigrations --settings=foodgram.settings.deploy && \
-python manage.py migrate --settings=foodgram.settings.deploy && \
-python manage.py loaddata example_data/recipes.json --settings=foodgram.settings.deploy && \ 
-gunicorn foodgram.wsgi:application --bind 0:8000 -c foodgram/settings/deploy.py"]
-```
+Ингредиенты при запуске docker compose загружаются автоматически
 
 * Для тестирования админ-панели также нужно создать суперпользователя
 ```
@@ -123,6 +104,6 @@ python manage.py runserver --settings=foodgram.settings.dev
 
 # Автор проекта
 
-Лобанов Владимир Викторович
-Telegram: @VVLobanov
+Лобанов Владимир Викторович<br>
+Telegram: @VVLobanov<br>
 Email (TPU): vvl45@gmail.com
