@@ -143,7 +143,7 @@ class UserViewSet(views.UserViewSet):
                     status=status.HTTP_201_CREATED
                 )
             return response.Response(
-                {"Fail": "Попытка подписаться на самого себя"},
+                {"Fail": "Такая подписка уже существует"},
                 status=status.HTTP_409_CONFLICT
             )
 

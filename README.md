@@ -105,7 +105,7 @@ python manage.py createsuperuser --settings=foodgram.settings.dev
 * Заполнить базу данных ингридиентами
 
 ```bash
-python manage.py loaddata example_data/ingredients.json --settings=foodgram.settings.dev
+python manage.py import_ingredients ingredients.json --settings=foodgram.settings.dev
 ```
 
 * Запустить сервер
@@ -116,11 +116,13 @@ python manage.py runserver --settings=foodgram.settings.dev
 
 # API
 
-* http://127.0.0.1:8000/admin/ - админ панель; 
-* http://127.0.0.1:8000/api/ - корень API;
-* http://127.0.0.1/api/docs/ - документация к API;
-* http://127.0.0.1 - главная страница
+* [Админ панель](http://127.0.0.1:8000/admin/); 
+* [Корень API](http://127.0.0.1:8000/api/);
+* [Документация к API](http://127.0.0.1/api/docs/);
+* [Главная страница](http://127.0.0.1).
 
 # Автор проекта
 
 Лобанов Владимир Викторович
+Telegram: @VVLobanov
+Email (TPU): vvl45@gmail.com
