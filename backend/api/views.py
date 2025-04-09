@@ -14,7 +14,7 @@ from rest_framework import (
     viewsets
 )
 
-from api.permissions import IsMethodSafePermission
+from api.permissions import IsAuthorOrReadOnlyPermission
 from api.serializers import (
     CreateAvatarSerializer,
     CreateRecipeSerializer,
@@ -30,31 +30,6 @@ from recipes.models import (
     FavoriteUserRecipes,
     Subscription
 )
-
-get_user_model_cache = {}
-get_recipe_cache = {}
-
-
-def get_user_by_id(pk):
-    if pk not in get_user_model_cache:
-        user = get_object_or_404(
-            get_user_model(),
-            pk=pk
-        )
-        get_user_model_cache[pk] = user
-        return user
-    return get_user_model_cache[pk]
-
-
-def get_recipe_by_id(pk):
-    if pk not in get_recipe_cache:
-        recipe = get_object_or_404(
-            Recipe,
-            pk=pk
-        )
-        get_recipe_cache[pk] = recipe
-        return recipe
-    return get_recipe_cache[pk]
 
 
 class IngredientViewset(viewsets.ReadOnlyModelViewSet):
@@ -75,7 +50,7 @@ class IngredientViewset(viewsets.ReadOnlyModelViewSet):
 
 class UserViewSet(views.UserViewSet):
     queryset = get_user_model().objects.all()
-    permission_classes = (IsMethodSafePermission, )
+    permission_classes = (IsAuthorOrReadOnlyPermission, )
 
     @decorators.action(
         detail=False,
@@ -143,39 +118,46 @@ class UserViewSet(views.UserViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def subscribe(self, request, id):
-        target = get_user_by_id(id)
+        author = get_object_or_404(
+            get_user_model(),
+            pk=id
+        )
 
         if request.method == "POST":
-            if request.user.pk == int(id):
+            if request.user == author:
                 return response.Response(
                     {"Fail": "Попытка подписаться на самого себя"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            Subscription.objects.create(
+            subscription, created = Subscription.objects.get_or_create(
                 subscribing_user=request.user,
-                target=target
+                target=author
             )
-
+            if created:
+                return response.Response(
+                    SubscriberSerializer(
+                        author,
+                        context={"request": request}
+                    ).data,
+                    status=status.HTTP_201_CREATED
+                )
             return response.Response(
-                SubscriberSerializer(
-                    self.get_queryset().get(pk=id),
-                    context={"request": request}
-                ).data,
-                status=status.HTTP_201_CREATED
+                {"Fail": "Попытка подписаться на самого себя"},
+                status=status.HTTP_409_CONFLICT
             )
 
         get_object_or_404(
             Subscription,
             subscribing_user=request.user,
-            target=target
+            target=author
         ).delete()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = (IsMethodSafePermission, )
+    permission_classes = (IsAuthorOrReadOnlyPermission, )
     filter_backends = (rest_framework.DjangoFilterBackend,)
 
     def perform_create(self, serializer):
@@ -186,6 +168,35 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return CreateRecipeSerializer
         return RecipeSerializer
 
+    def manage_recipe_collection(self, request, pk, model, error_message):
+        recipe = get_object_or_404(
+            Recipe,
+            pk=pk
+        )
+
+        if request.method == "POST":
+            favorite, created = model.objects.get_or_create(
+                user=request.user,
+                recipe=recipe,
+            )
+
+            if created:
+                return response.Response(
+                    ShortRecipeSerializer(recipe).data,
+                    status=status.HTTP_201_CREATED
+                )
+            return response.Response(
+                {"Fail": error_message},
+                status=status.HTTP_409_CONFLICT
+            )
+
+        get_object_or_404(
+            model,
+            user=request.user,
+            recipe_id=pk
+        ).delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
     @decorators.action(
         detail=True,
         methods=("post", "delete"),
@@ -194,25 +205,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def favorite(self, request, pk):
-        recipe = get_recipe_by_id(pk)
-
-        if request.method == "POST":
-            FavoriteUserRecipes.objects.create(
-                user=request.user,
-                recipe=recipe,
-            )
-
-            return response.Response(
-                ShortRecipeSerializer(recipe).data,
-                status=status.HTTP_201_CREATED
-            )
-
-        get_object_or_404(
+        return self.manage_recipe_collection(
+            request,
+            pk,
             FavoriteUserRecipes,
-            user=request.user,
-            recipe_id=pk
-        ).delete()
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+            "Рецепт уже в избранном"
+        )
 
     @decorators.action(
         detail=True,
@@ -222,25 +220,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def shopping_cart(self, request, pk):
-        recipe = get_recipe_by_id(pk)
-
-        if request.method == "POST":
-            Cart.objects.create(
-                user=request.user,
-                recipe=recipe,
-            )
-
-            return response.Response(
-                ShortRecipeSerializer(recipe).data,
-                status=status.HTTP_201_CREATED
-            )
-
-        get_object_or_404(
+        return self.manage_recipe_collection(
+            request,
+            pk,
             Cart,
-            user=request.user,
-            recipe_id=pk
-        ).delete()
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+            "Рецепт уже в корзине"
+        )
 
     @decorators.action(
         detail=False,
@@ -261,10 +246,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             "recipe__recipe_ingredients__ingredient__name"
         )
 
-        recipes = (
-            Cart.objects
-            .filter(user=request.user)
-        )
+        recipes = request.user.carts.all()
 
         file = "\n".join([
             "Список покупок {username} ({date}):".format(
