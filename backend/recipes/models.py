@@ -29,10 +29,6 @@ class User(AbstractUser):
         upload_to="media/user_avatars/",
         blank=True,
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Дата создания",
-    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
@@ -43,7 +39,6 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ("-created_at",)
 
 
 class Subscription(models.Model):
@@ -156,7 +151,10 @@ class IngredientAndRecipe(models.Model):
         verbose_name='Продукт'
     )
     amount = models.PositiveIntegerField(
-        verbose_name=''
+        verbose_name='Количество',
+        validators=[
+            MinValueValidator(1),
+        ],
     )
 
     def __str__(self):

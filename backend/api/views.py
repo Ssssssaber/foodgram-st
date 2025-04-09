@@ -178,6 +178,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsMethodSafePermission, )
     filter_backends = (rest_framework.DjangoFilterBackend,)
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
     def get_serializer_class(self):
         if self.action in ("create", "partial_update"):
             return CreateRecipeSerializer
@@ -285,7 +288,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             ),
             "Рецепты:",
             *(
-                "{i}. {name}".format(i=i, name=recipe)
+                "{i}. {name} от {author}".format(
+                    i=i,
+                    name=recipe,
+                    author=recipe.recipe.author
+                )
                 for i, recipe in enumerate(recipes, start=1)
             ),
         ])

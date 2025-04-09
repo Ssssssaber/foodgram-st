@@ -92,7 +92,7 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description="Продукты")
     @mark_safe
     def get_ingredients(self, recipe):
-        return '; '.join(
+        return '<br>'.join(
             f" {recipe_ingredient.ingredient.name}, \
 {recipe_ingredient.amount} \
 {recipe_ingredient.ingredient.measurement_unit}"
