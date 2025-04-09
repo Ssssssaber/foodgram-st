@@ -175,7 +175,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
         if request.method == "POST":
-            favorite, created = model.objects.get_or_create(
+            collection, created = model.objects.get_or_create(
                 user=request.user,
                 recipe=recipe,
             )

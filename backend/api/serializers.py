@@ -148,7 +148,8 @@ class SubscriberSerializer(AuthorSerializer):
 
 
 class CreateIngredientSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
+    id = serializers.PrimaryKeyRelatedField(
+        queryset=Ingredient.objects.all(), source='ingredient')
     amount = serializers.IntegerField(
         min_value=1
     )
@@ -185,7 +186,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             )
 
         ingredients_ids = [
-            ingredient["id"]
+            ingredient["ingredient"].id
             for ingredient in ingredients
         ]
         if len(ingredients_ids) != len(set(ingredients_ids)):
@@ -219,7 +220,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     def create_ingredients(self, ingredients, recipe):
         IngredientAndRecipe.objects.bulk_create(
             IngredientAndRecipe(
-                ingredient_id=ingredient["id"],
+                ingredient_id=ingredient["ingredient"].id,
                 recipe=recipe,
                 amount=ingredient["amount"]
             )
