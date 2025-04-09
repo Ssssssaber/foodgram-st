@@ -106,4 +106,4 @@ python manage.py runserver --settings=foodgram.settings.dev
 
 Лобанов Владимир Викторович<br>
 Telegram: @VVLobanov<br>
-Email (TPU): vvl45@gmail.com
+Email (TPU): vvl45@tpu.ru
